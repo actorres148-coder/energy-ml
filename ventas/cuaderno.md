@@ -61,6 +61,16 @@ Después la computadora junta las fichas parecidas en grupos (como ordenar un pl
 
 - Agregamos el **desvío** (`std`): mide si un producto vende **parejo** o **variable**. Ejemplo del kiosco: A vende 10, 10, 10, 10 (parejo, fácil de adivinar); B vende 0, 20, 5, 15 (variable, difícil). Los dos promedian 10.
 - Resultado: la tienda 1, producto 2 vende 53 por día con desvío 15 (el más variable de los 5 primeros; también el que más vende).
+- Fichas de los primeros 5 productos de la tienda 1 (se calcularon las 500):
+
+| Producto | Promedio por día | Desvío |
+|---|---|---|
+| 1 | 20 | 6,7 |
+| 2 | 53 | 15,0 |
+| 3 | 33 | 10,1 |
+| 4 | 20 | 6,6 |
+| 5 | 17 | 5,7 |
+
 - Aprendimos a leer un error: `SyntaxError: '(' was never closed` en la línea 7 = faltaba cerrar un paréntesis.
 
 **Cómo leer el resultado:** el número de tienda aparece una sola vez; los espacios vacíos debajo significan "sigue siendo la misma tienda" (como una celda combinada).
