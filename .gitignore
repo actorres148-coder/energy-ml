@@ -34,6 +34,7 @@ datos/
 # Resultados del entrenamiento: los genera cada alumno
 data/output/*
 !data/output/.gitkeep
+!data/output/logistica_*.png
 
 # Modelos serializados (joblib)
 data/models/*
@@ -42,3 +43,7 @@ data/models/*
 # Cache de mediciones descargadas desde VPS (modo prod)
 data/prod-cache/*
 !data/prod-cache/.gitkeep
+
+# Datos de logística (DataCo Smart Supply Chain Dataset)
+datos/logistica/*.csv
+!datos/logistica/.gitkeep
