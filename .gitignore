@@ -28,6 +28,9 @@ htmlcov/
 *.swo
 # Scripts locales de extracción (no versionados)
 tmp/
+
+# Dataset UCI Air Quality (regenerable con src/medioambiente/data.py)
+datos/
 # Resultados del entrenamiento: los genera cada alumno
 data/output/*
 !data/output/.gitkeep
