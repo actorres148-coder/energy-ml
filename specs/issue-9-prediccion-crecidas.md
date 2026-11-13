@@ -2,14 +2,14 @@
 
 **Versión:** 0.1 (borrador para validar)
 **Fecha:** 2026-11-06
-**Estado:** Borrador — dominio implementado (sin commit); pendiente de decisiones de datos (sección 7)
+**Estado:** Borrador — dominio y cliente INA implementados en la rama; decisiones de datos parciales (sección 7)
 
 **Progreso:**
 - ✅ Dominio puro: `src/domain/crecidas/modelos.py` (`Escenario`, `Umbrales`, `AlertaTemprana`) y `reglas.py` (`clasificar_escenario`, `generar_alerta`).
 - ✅ Tests unitarios: `tests/unit/crecidas/test_reglas_crecidas.py` (límites inclusivos, orden de umbrales, horizonte).
-- ✅ Niveles oficiales Tigre en `src/domain/crecidas/estaciones.py` (alerta 3,30 m; evacuación 3,80 m).
+- ✅ Niveles oficiales Tigre en `src/domain/crecidas/modelos.py` (`NIVELES_OFICIALES_TIGRE`, `NivelesOficiales.a_umbrales`): alerta 3,30 m; evacuación 3,80 m, mapeada a crecida.
 - ✅ Cliente de series INA y parser CSV: `src/infrastructure/crecidas/ina_serie.py` (tests con descargador inyectado, sin red).
-- ❓ Dudas de diseño en el sub-issue #10.
+- 🟡 Dudas de diseño en #10: enfoque temporal y horizonte propuestos (comentario del 2026-11-07). Siguen abiertas vigilancia, notificación y material pedagógico.
 - ⏳ Pendiente: repositorio de observaciones, pronosticador, casos de uso, API y CLI (dependen de la fuente de datos).
 **Origen:** Issue #9 — "modelo predictivo de crecida de rios y precipitaciones"
 
@@ -31,11 +31,11 @@ pedagógico (reglas explícitas y auditables junto al modelo estadístico).
 ## 2. Alcance
 
 ### Incluido
-- Ingesta de series temporales de precipitación (mm) y nivel de río (m) con paso fijo.
+- Ingesta de series de nivel de río (m): Tigre con paso diario, San Fernando agregado a diario. La precipitación queda fuera de la primera versión (sección 7).
 - Ingeniería de variables: rezagos (lags), acumulados de lluvia en ventanas (1h, 6h, 24h),
   tendencia del nivel, estacionalidad horaria.
-- Modelo de **pronóstico** del nivel de río a horizonte H (por defecto 6 h), con línea base
-  de persistencia para comparar.
+- Modelo de **pronóstico** diario del nivel de río en Tigre, a horizontes de 1, 2 y 3 días,
+  con línea base de persistencia para comparar.
 - Clasificación de **escenario** según umbrales de nivel (normal / vigilancia / alerta / crecida),
   con reglas explícitas.
 - Generación de **alertas tempranas** (estructura de alerta + endpoint REST de lectura).
@@ -57,7 +57,7 @@ pedagógico (reglas explícitas y auditables junto al modelo estadístico).
 | RF-1 | Cargar mediciones de precipitación y nivel de río desde CSV (mismo patrón que `CsvMedicionRepository`). |
 | RF-2 | Validar la serie: timestamps monótonos, paso uniforme, valores no negativos para lluvia, detección de huecos. |
 | RF-3 | Construir variables a partir de la serie sin fuga de información (solo datos ≤ t para predecir t+H). |
-| RF-4 | Entrenar un regresor para el nivel en t+H y compararlo contra persistencia (último valor observado). |
+| RF-4 | Entrenar un regresor para el nivel en t+H (H = 1, 2 o 3 días) y compararlo contra persistencia (último valor observado). |
 | RF-5 | Clasificar el escenario por umbrales de nivel configurables (ver RF-7). |
 | RF-6 | Emitir una `AlertaTemprana` cuando el escenario previsto sea de alerta o crecida, con hora de emisión, horizonte y nivel previsto. |
 | RF-7 | Umbrales de nivel por estación en configuración (no hardcodeados), con valores por defecto documentados. |
@@ -106,7 +106,7 @@ src/infrastructure/
 | crecida | `h_pred ≥ umbral_crecida` |
 
 Se genera `AlertaTemprana` si el escenario es **alerta** o **crecida**.
-Regla adicional opcional: si la lluvia acumulada en 6 h supera `umbral_lluvia_mm`, se eleva
+Regla adicional opcional (fuera de la primera versión, sin datos de lluvia): si la lluvia acumulada en 6 h supera `umbral_lluvia_mm`, se eleva
 a vigilancia aunque el nivel previsto aún no lo indique (decisión a confirmar).
 
 ---
@@ -123,22 +123,21 @@ a vigilancia aunque el nivel previsto aún no lo indique (decisión a confirmar)
 
 ---
 
-## 7. Decisiones abiertas (requieren confirmación del responsable)
+## 7. Decisiones (propuestas y pendientes)
 
-1. **Fuente de datos reales.** ¿Qué estación(es) y de qué organismo se usan
-   (p. ej. series de precipitación y altura hidrométrica)? El repo hoy no contiene datos de lluvia ni de río.
-   Sin esto solo se puede trabajar con datos sintéticos.
-2. **Paso temporal y horizonte.** ¿Paso de muestreo (5 min, 15 min, 1 h)? ¿Horizonte de pronóstico H (propuesta: 6 h)?
-3. **Umbrales de nivel.** Valores de vigilancia, alerta y crecida para cada estación (en metros).
-   Si no existen oficialmente, ¿se usan percentiles históricos como propuesta provisoria?
-4. **Destino de las alertas.** ¿Solo API/registro, o hace falta notificación activa (fuera de alcance por ahora)?
-5. **Uso en el curso.** ¿Debe entrar también al material pedagógico (`docs/`, cuaderno alumno) o queda solo como código?
+Fuente de las propuestas: comentario de realsol760-ai en #10 (2026-11-07). Todavía no es decisión del responsable del proyecto.
+
+1. **Fuente de datos.** Propuesta: series INA 49 (Tigre) y 52 (San Fernando). Precipitación **fuera de la primera versión** (acceso a INTA o SMN en investigación). Río de la Plata (SHN) en una **segunda etapa**, pendiente de una fuente accesible.
+2. **Paso temporal y horizonte.** Propuesta: pronóstico **diario** de Tigre, con San Fernando agregado por día. Horizontes de **1, 2 y 3 días**. Queda descartado el H = 6 h del borrador original.
+3. **Umbrales de nivel.** Alerta 3,30 m y evacuación 3,80 m (sección 9.1). La propuesta de #10 los llama referencias *pendientes de verificar* contra la fuente oficial; hay que confirmarlo. **Vigilancia: pendiente**, sin umbral oficial (definir si se usa percentil histórico).
+4. **Destino de las alertas.** Propuesta: se guardan en registro, **sin notificaciones** en la primera versión.
+5. **Uso en el curso.** Pendiente: ¿entra en `docs/` y en el cuaderno del alumno?
 
 ---
 
 ## 8. Criterios de aceptación
 
-- Con datos sintéticos de prueba, el modelo supera a la persistencia en MAE para horizonte H.
+- Con datos sintéticos de prueba, el modelo supera a la persistencia en MAE para cada horizonte (1, 2 y 3 días).
 - Dado un nivel previsto por encima del umbral de alerta, se genera exactamente una `AlertaTemprana` con escenario correcto.
 - `GET /api/v1/crecidas/alertas` devuelve las alertas con sus entradas y umbrales auditables.
 - La suite de tests sigue en verde y la regla de arquitectura pasa sin excepciones.
@@ -195,3 +194,5 @@ Serie 52 es la candidata a **predictor aguas arriba** del Río de la Plata/Delta
 2. El nivel en el Río de la Plata (aviso SHN por sudestada) no está en esta API. Puede aparecer
    como factor de riesgo no modelado.
 3. Los umbrales de la spec original (5 min) quedan desplazados por la realidad de la fuente.
+4. Enfoque propuesto en #10: pronóstico diario con horizontes de 1 a 3 días (sección 7, punto 2).
+5. Los niveles de 9.1 figuran como verificados, pero el comentario de #10 los marca como pendientes de verificar. Hay que resolver esa discrepancia antes de usarlos como umbral de crecida.
