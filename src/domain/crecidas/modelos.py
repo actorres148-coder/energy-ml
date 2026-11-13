@@ -54,3 +54,36 @@ class NivelRio:
 
     instante: datetime
     nivel_m: float
+
+
+@dataclass(frozen=True)
+class NivelesOficiales:
+    """Niveles oficiales de Prefectura Naval para una estación (metros sobre su cero de escala).
+
+    Prefectura define solo alerta y evacuación; no define vigilancia.
+    """
+
+    alerta_m: float
+    evacuacion_m: float
+    aguas_bajas_m: float
+
+    def a_umbrales(self, vigilancia_m: float) -> Umbrales:
+        """Mapea a Umbrales: alerta -> alerta, evacuación -> crecida.
+
+        La vigilancia no es oficial: la aporta quien llama (sección 9.1 de la spec).
+        """
+        return Umbrales(
+            vigilancia_m=vigilancia_m,
+            alerta_m=self.alerta_m,
+            crecida_m=self.evacuacion_m,
+        )
+
+
+# Fuente: reporte "Registro del estado de los ríos" de Prefectura Naval Argentina
+# (https://contenidosweb.prefecturanaval.gob.ar/alturas/pdf.php), confirmado en la API del INA
+# (estación Tigre, id_externo 430). Río Luján.
+NIVELES_OFICIALES_TIGRE = NivelesOficiales(
+    alerta_m=3.30,
+    evacuacion_m=3.80,
+    aguas_bajas_m=0.30,
+)
